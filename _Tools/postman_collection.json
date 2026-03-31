@@ -1,0 +1,755 @@
+{
+  "info": {
+    "name": "openDelivery API",
+    "description": "Full test collection for the openDelivery backend.\n\n**Run order (first time):**\n1. `1a. Login — Platform Admin`\n2. `2a. Create Owner` — saves owner_id and owner_schema\n3. `1b. Login — Owner` — uses owner_schema saved above\n4. `3a. Create Property` — saves property_id\n5. `4a. Create Device` — saves device_id\n6. `5a. Create Product` — saves product_id\n7. `6a. Create Order` — saves order_id (no auth, kiosk flow)\n8. `7a. Initiate Payment` — saves payment_id (no auth, kiosk flow)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",             "value": "http://localhost:8080/api" },
+    { "key": "admin_token",         "value": "" },
+    { "key": "admin_refresh",       "value": "" },
+    { "key": "owner_token",         "value": "" },
+    { "key": "owner_refresh",       "value": "" },
+    { "key": "owner_id",            "value": "" },
+    { "key": "owner_schema",        "value": "" },
+    { "key": "property_id",         "value": "" },
+    { "key": "device_id",           "value": "" },
+    { "key": "product_id",          "value": "" },
+    { "key": "order_id",            "value": "" },
+    { "key": "payment_id",          "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "1a. Login — Platform Admin",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"admin_token\", json.accessToken);",
+                "pm.collectionVariables.set(\"admin_refresh\", json.refreshToken);",
+                "console.log(\"Admin token saved. Role: \" + json.role);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@kustax.net\",\n  \"password\": \"nwDC31!skgpbyr\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "1b. Login — Owner",
+          "description": "Run AFTER 2a (Create Owner). Uses owner_schema saved by that request.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"owner_token\", json.accessToken);",
+                "pm.collectionVariables.set(\"owner_refresh\", json.refreshToken);",
+                "console.log(\"Owner token saved. Schema: \" + pm.collectionVariables.get(\"owner_schema\"));"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"owner@testhotel.com\",\n  \"password\": \"Owner1234!\",\n  \"role\": \"OWNER\",\n  \"schemaName\": \"{{owner_schema}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "1c. Refresh Token — Admin",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"admin_token\", json.accessToken);",
+                "pm.collectionVariables.set(\"admin_refresh\", json.refreshToken);",
+                "console.log(\"Admin tokens rotated.\");"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{admin_refresh}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        {
+          "name": "1d. Login — Wrong Password (expect 401)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 401\", () => pm.response.to.have.status(401));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@kustax.net\",\n  \"password\": \"wrongpassword\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "2. Owners (Platform Admin)",
+      "item": [
+        {
+          "name": "2a. Create Owner",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"owner_id\", json.id);",
+                "pm.collectionVariables.set(\"owner_schema\", json.schemaName);",
+                "console.log(\"Owner created. ID: \" + json.id + \" Schema: \" + json.schemaName);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Hotel\",\n  \"email\": \"owner@testhotel.com\",\n  \"phone\": \"+30 210 0000000\",\n  \"password\": \"Owner1234!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/owners"
+          }
+        },
+        {
+          "name": "2b. List Owners",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{baseUrl}}/owners"
+          }
+        },
+        {
+          "name": "2c. Get Owner by ID",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{baseUrl}}/owners/{{owner_id}}"
+          }
+        },
+        {
+          "name": "2d. Update Owner",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Hotel (Updated)\",\n  \"phone\": \"+30 210 1234567\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/owners/{{owner_id}}"
+          }
+        },
+        {
+          "name": "2e. Get Owner — Not Found (expect 404)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 404\", () => pm.response.to.have.status(404));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{baseUrl}}/owners/00000000-0000-0000-0000-000000000000"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "3. Properties (Owner)",
+      "item": [
+        {
+          "name": "3a. Create Property",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"property_id\", json.id);",
+                "console.log(\"Property created. ID: \" + json.id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Seaside Suite 101\",\n  \"address\": \"Leoforos Poseidonos 1\",\n  \"city\": \"Athens\",\n  \"country\": \"Greece\",\n  \"timezone\": \"Europe/Athens\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/properties"
+          }
+        },
+        {
+          "name": "3b. List Properties",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/properties"
+          }
+        },
+        {
+          "name": "3c. Get Property by ID",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/properties/{{property_id}}"
+          }
+        },
+        {
+          "name": "3d. Update Property",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Seaside Suite 101 (Renovated)\",\n  \"address\": \"Leoforos Poseidonos 1\",\n  \"city\": \"Athens\",\n  \"country\": \"Greece\",\n  \"timezone\": \"Europe/Athens\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/properties/{{property_id}}"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "4. Devices (Owner)",
+      "item": [
+        {
+          "name": "4a. Create Device",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"device_id\", json.id);",
+                "console.log(\"Device created. ID: \" + json.id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kiosk Tablet 1\",\n  \"androidDeviceId\": \"emulator-5554\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/properties/{{property_id}}/devices"
+          }
+        },
+        {
+          "name": "4b. List Devices for Property",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/properties/{{property_id}}/devices"
+          }
+        },
+        {
+          "name": "4c. Ping Device (no auth — kiosk heartbeat)",
+          "description": "Simulates the kiosk sending a heartbeat. No JWT required. Passes schemaName as query param.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 204\", () => pm.response.to.have.status(204));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{device_id}}/ping?schemaName={{owner_schema}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{device_id}}", "ping"],
+              "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "5. Products (Owner)",
+      "item": [
+        {
+          "name": "5a. Create Product",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"product_id\", json.id);",
+                "console.log(\"Product created. ID: \" + json.id);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Natural still mineral water\",\n  \"category\": \"BEVERAGES\",\n  \"source\": \"IN_ROOM_STORE\",\n  \"basePrice\": 200,\n  \"imageUrl\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "5b. List All Products (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
+          "name": "5c. List Available Products (kiosk catalog — no auth)",
+          "description": "The kiosk uses this to build the catalog. No JWT, uses schemaName query param.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?schemaName={{owner_schema}}&available=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "schemaName", "value": "{{owner_schema}}" },
+                { "key": "available",  "value": "true" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5d. Update Product",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Premium natural still mineral water\",\n  \"basePrice\": 250,\n  \"imageUrl\": null,\n  \"isAvailable\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products/{{product_id}}"
+          }
+        },
+        {
+          "name": "5e. Toggle Availability — disable",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Natural still mineral water\",\n  \"basePrice\": 250,\n  \"imageUrl\": null,\n  \"isAvailable\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products/{{product_id}}/availability"
+          }
+        },
+        {
+          "name": "5f. Toggle Availability — re-enable",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Natural still mineral water\",\n  \"basePrice\": 250,\n  \"imageUrl\": null,\n  \"isAvailable\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/products/{{product_id}}/availability"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "6. Orders (Kiosk — no auth)",
+      "item": [
+        {
+          "name": "6a. Create Order",
+          "description": "No JWT required. Kiosk flow. Passes schemaName, deviceId, propertyId as query params.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"order_id\", json.id);",
+                "console.log(\"Order created. ID: \" + json.id + \" Status: \" + json.status);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestEmail\": \"guest@example.com\",\n  \"type\": \"IN_ROOM_STORE\",\n  \"partnerStoreId\": null,\n  \"items\": [\n    {\n      \"productId\": \"{{product_id}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"notes\": \"Please leave at door\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders?schemaName={{owner_schema}}&deviceId={{device_id}}&propertyId={{property_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "schemaName",  "value": "{{owner_schema}}" },
+                { "key": "deviceId",    "value": "{{device_id}}" },
+                { "key": "propertyId",  "value": "{{property_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6b. List Orders for Property (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/orders?propertyId={{property_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [{ "key": "propertyId", "value": "{{property_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "6c. Get Order by ID (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/orders/{{order_id}}"
+          }
+        },
+        {
+          "name": "6d. Update Order Status — PREPARING (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARING\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/orders/{{order_id}}/status"
+          }
+        },
+        {
+          "name": "6e. Update Order Status — DELIVERED (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELIVERED\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/orders/{{order_id}}/status"
+          }
+        },
+        {
+          "name": "6f. Invalid Status Transition (expect 409)",
+          "description": "Order is already DELIVERED — any further transition should return 409.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 409\", () => pm.response.to.have.status(409));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/orders/{{order_id}}/status"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "7. Payments (Kiosk — no auth)",
+      "item": [
+        {
+          "name": "7a. Initiate Payment",
+          "description": "No JWT required. Kiosk flow. Passes schemaName as query param.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set(\"payment_id\", json.id);",
+                "console.log(\"Payment completed. ID: \" + json.id + \" Status: \" + json.status);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"method\": \"REVOLUT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments?schemaName={{owner_schema}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
+            }
+          }
+        },
+        {
+          "name": "7b. Pay Already-Paid Order (expect 409)",
+          "description": "Second payment on same order should return 409 Conflict.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 409\", () => pm.response.to.have.status(409));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"method\": \"REVOLUT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments?schemaName={{owner_schema}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
+            }
+          }
+        },
+        {
+          "name": "7c. Get Payment by Order ID (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/orders/{{order_id}}/payment"
+          }
+        }
+      ]
+    }
+
+  ]
+}
