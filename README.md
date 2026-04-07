@@ -26,6 +26,25 @@
 2.  **Αρχιτεκτονικός Σχεδιασμός**: Καθορισμός της δομής των modules και επιλογή του τεχνολογικού stack.
 3.  **Μοντελοποίηση Δεδομένων**: Σχεδιασμός και τεχνική υλοποίηση των core οντοτήτων (Entities) και του σχήματος της βάσης δεδομένων.
 4.  **Σχεδιασμός API**: Αποτύπωση των βασικών διεπαφών επικοινωνίας (REST endpoints).
+5.  **Database Layer & Authentication**: Πλήρης υλοποίηση του DB layer (14 πίνακες), υποδομή JWT, BCrypt, refresh token rotation, endpoints `/api/auth/login`, `/api/auth/refresh`, `/api/health`.
+
+## 🚀 Γρήγορη Εκκίνηση (Quick Start)
+
+Για να τρέξετε το σύστημα τοπικά από το **root** του project:
+
+1.  **Εκκίνηση Docker (DB & Backend)**:
+    ```bash
+    _Tools\Docker\manage-db.bat up
+    ```
+2.  **Seed Platform Admin**:
+    ```bash
+    # Προϋπόθεση: pip install bcrypt psycopg2-binary
+    python _Tools/seed_admin.py
+    ```
+    *Credentials: `admin@guestdesk.io` / `Admin@GuestDesk1`*
+
+3.  **Έλεγχος**:
+    Ανοίξτε `http://localhost:8080/api/health` στον browser.
 
 ---
 
@@ -35,7 +54,9 @@
 - 📑 **Εβδομαδιαίες Αναφορές**:
     - [Εβδομάδα 01 — Έναρξη & Έρευνα](_Docs/Weekly%20Reports/Week_01_230326.md)
     - [Εβδομάδα 02 — Ανάλυση & Μοντελοποίηση](_Docs/Weekly%20Reports/Week_02_300326.md)
+    - [Εβδομάδα 03 — Database Layer & Authentication](_Docs/Weekly%20Reports/Week_03_060426.md)
 - 🗺️ **Αρχιτεκτονική Επισκόπηση**: [Χάρτης Modules & Δομή Έργου](_Docs/Info/Project_Structure.md)
+- 💻 **Τοπικό Περιβάλλον Ανάπτυξης**: [Docker, DB seed, JDBC config](_Docs/Info/Dev_Environment.md)
 - 🛠️ **Εργαλεία Ελέγχου**: [Postman Collection (API)](_Tools/postman_collection.json)
 
 ---

@@ -1,0 +1,59 @@
+# ── Build outputs ─────────────────────────────────────────────────────────────
+build/
+**/build/
+out/
+/captures/
+*.class
+*.jar
+*.war
+*.aar
+
+# ── Gradle ────────────────────────────────────────────────────────────────────
+.gradle/
+local.properties
+gradle.properties.local
+
+# ── Kotlin build cache ────────────────────────────────────────────────────────
+.kotlin/
+
+# ── IDE — IntelliJ IDEA / Android Studio ──────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+.externalNativeBuild/
+.cxx/
+
+# ── AI assistant files ─────────────────────────────────────────────────────────
+.claude/
+.gemini/
+CLAUDE.md
+.aider*
+.cursorrules
+*.claude_history
+
+# ── Test source sets (all KMP variants) ───────────────────────────────────────
+**/src/test/
+**/src/androidTest/
+**/src/commonTest/
+**/src/jvmTest/
+**/src/wasmJsTest/
+**/src/jsTest/
+**/src/androidUnitTest/
+**/src/androidInstrumentedTest/
+
+# ── OS / temp ─────────────────────────────────────────────────────────────────
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+
+# ── Misc Gradle artifacts ──────────────────────────────────────────────────────
+# Compiled class files that Exposed leaks to the project root during Gradle daemon runs
+/org/
+
+# ── Credentials — intentional exceptions ──────────────────────────────────────
+# _Tools/Docker/.env is committed on purpose (demo credentials).
+# Do NOT add it here.

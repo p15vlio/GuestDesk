@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "openDelivery API",
+    "name": "Guest Desk API",
     "description": "Full test collection for the openDelivery backend.\n\n**Run order (first time):**\n1. `1a. Login — Platform Admin`\n2. `2a. Create Owner` — saves owner_id and owner_schema\n3. `1b. Login — Owner` — uses owner_schema saved above\n4. `3a. Create Property` — saves property_id\n5. `4a. Create Device` — saves device_id\n6. `5a. Create Product` — saves product_id\n7. `6a. Create Order` — saves order_id (no auth, kiosk flow)\n8. `7a. Initiate Payment` — saves payment_id (no auth, kiosk flow)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -19,6 +19,27 @@
     { "key": "payment_id",          "value": "" }
   ],
   "item": [
+
+    {
+      "name": "0. Health",
+      "item": [
+        {
+          "name": "0a. Health Check",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
 
     {
       "name": "1. Auth",
@@ -43,7 +64,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@kustax.net\",\n  \"password\": \"nwDC31!skgpbyr\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
+              "raw": "{\n  \"email\": \"admin@guestdesk.io\",\n  \"password\": \"Admin@GuestDesk1\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/auth/login"
@@ -116,7 +137,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@kustax.net\",\n  \"password\": \"wrongpassword\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
+              "raw": "{\n  \"email\": \"admin@guestdesk.io\",\n  \"password\": \"wrongpassword\",\n  \"role\": \"PLATFORM_ADMIN\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/auth/login"
