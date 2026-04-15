@@ -57,3 +57,6 @@ python _Tools/seed_admin.py
 
 - **Database Connection Refused**: Βεβαιωθείτε ότι η PostgreSQL έχει ξεκινήσει πλήρως (χρειάζεται ~5-10 δευτερόλεπτα την πρώτη φορά).
 - **Python Seed Script Error**: Το script χρειάζεται πρόσβαση στο port 5432. Βεβαιωθείτε ότι δεν τρέχει άλλη τοπική υπηρεσία PostgreSQL στο ίδιο port.
+
+---
+[🔙 Επιστροφή στο README](../../README.md)

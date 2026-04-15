@@ -47,3 +47,6 @@
 - **Database**: PostgreSQL (Schema-per-tenant architecture)
 - **UI Framework**: Compose Multiplatform (Android & Wasm)
 - **Dependency Management**: Gradle (Kotlin DSL)
+
+---
+[🔙 Επιστροφή στο README](../../README.md)

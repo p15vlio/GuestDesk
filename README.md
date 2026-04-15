@@ -55,8 +55,10 @@
     - [Εβδομάδα 01 — Έναρξη & Έρευνα](_Docs/Weekly%20Reports/Week_01_230326.md)
     - [Εβδομάδα 02 — Ανάλυση & Μοντελοποίηση](_Docs/Weekly%20Reports/Week_02_300326.md)
     - [Εβδομάδα 03 — Database Layer & Authentication](_Docs/Weekly%20Reports/Week_03_060426.md)
+    - [Εβδομάδα 04 — Περίληψη & Εισαγωγή](_Docs/Weekly%20Reports/Week_04_130426.md)
 - 🗺️ **Αρχιτεκτονική Επισκόπηση**: [Χάρτης Modules & Δομή Έργου](_Docs/Info/Project_Structure.md)
 - 💻 **Τοπικό Περιβάλλον Ανάπτυξης**: [Docker, DB seed, JDBC config](_Docs/Info/Dev_Environment.md)
+- 🧪 **Οδηγός Ανάπτυξης και Δοκιμών**: [Build & Test Guide](_Docs/Info/Build_and_Dev_Guide.md)
 - 🛠️ **Εργαλεία Ελέγχου**: [Postman Collection (API)](_Tools/postman_collection.json)
 
 ---

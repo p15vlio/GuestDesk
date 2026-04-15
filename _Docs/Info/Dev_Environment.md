@@ -60,3 +60,6 @@ python _Tools/seed_admin.py
 Προεπιλεγμένα credentials: `admin@guestdesk.io` / `Admin@GuestDesk1`
 
 Δείτε [`_Tools/seed_admin.py`](../../_Tools/seed_admin.py) για override μέσω environment variables.
+
+---
+[🔙 Επιστροφή στο README](../../README.md)
