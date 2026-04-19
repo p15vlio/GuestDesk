@@ -23,9 +23,12 @@
 #### 3. `:backend` (JVM / Ktor)
 - **Σκοπός**: Ο εξυπηρετητής (Server) του συστήματος.
 - **Περιεχόμενα**: 
-    - **Routing**: Ορισμός των REST endpoints.
-    - **Database (Exposed)**: Υλοποίηση των πινάκων και διαχείριση της PostgreSQL (Multi-tenant schema logic).
-    - **Security**: Διαχείριση αυθεντικοποίησης (JWT) και κρυπτογράφησης.
+    - **Database (Exposed)**: Υλοποίηση των πινάκων και διαχείριση της PostgreSQL (Multi-tenant schema logic, SchemaManager, TenantContext).
+    - **Security**: Διαχείριση αυθεντικοποίησης (JWT, BCrypt) και ασφάλειας.
+    - **Repository Layer**: Υλοποίηση των repository interfaces μέσω Exposed DSL — `ExposedOwnerRepository`, `ExposedPropertyRepository`, `ExposedDeviceRepository`, `ExposedProductRepository`, `ExposedOrderRepository` κ.ά.
+    - **Service Layer**: Επιχειρηματική λογική ανά οντότητα — `OwnerService` (δημιουργία tenant schema, προσωρινός κωδικός), `PropertyService`, `DeviceService` (QR activation), `ProductService`, `OrderService` (state machine), `AuditLogService`.
+    - **Routing Layer**: Ορισμός ~27 REST endpoints — `OwnerRoutes`, `PropertyRoutes`, `DeviceRoutes`, `ProductRoutes`, `OrderRoutes`, `AuthRoutes`. `RouteExtensions` για εξαγωγή JWT claims (role, schemaName).
+    - **Adapter Layer**: 4 emulated adapters που υλοποιούν τα port interfaces του domain — `EmulatedFoodDeliveryAdapter`, `EmulatedLogisticsAdapter`, `EmulatedPaymentAdapter`, `EmulatedEmailAdapter`.
 
 #### 4. `:app` (Android / Compose)
 - **Σκοπός**: Η εφαρμογή Guest Kiosk για tablet.

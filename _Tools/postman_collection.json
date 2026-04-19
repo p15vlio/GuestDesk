@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Guest Desk API",
-    "description": "Full test collection for the openDelivery backend.\n\n**Run order (first time):**\n1. `1a. Login — Platform Admin`\n2. `2a. Create Owner` — saves owner_id and owner_schema\n3. `1b. Login — Owner` — uses owner_schema saved above\n4. `3a. Create Property` — saves property_id\n5. `4a. Create Device` — saves device_id\n6. `5a. Create Product` — saves product_id\n7. `6a. Create Order` — saves order_id (no auth, kiosk flow)\n8. `7a. Initiate Payment` — saves payment_id (no auth, kiosk flow)",
+    "description": "Full test collection for the openDelivery backend.\n\n**Run order (first time):**\n1. `1a. Login — Platform Admin`\n2. `2a. Create Owner` — saves owner_id, owner_schema, owner_email, owner_temp_password\n3. `1b. Login — Owner` — uses owner_schema and owner_temp_password saved above\n4. `3a. Create Property` — saves property_id\n5. `4a. Create Device` — saves device_id, activation_code\n6. `4d. Activate Device` — uses activation_code (no auth, kiosk flow)\n7. `5a. Create Product` — saves product_id\n8. `6a. Create Order` — saves order_id (no auth, kiosk flow)\n\n> Payments (section 7) are pending Phase 3B and will return 404.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,8 +12,11 @@
     { "key": "owner_refresh",       "value": "" },
     { "key": "owner_id",            "value": "" },
     { "key": "owner_schema",        "value": "" },
+    { "key": "owner_email",         "value": "" },
+    { "key": "owner_temp_password", "value": "" },
     { "key": "property_id",         "value": "" },
     { "key": "device_id",           "value": "" },
+    { "key": "activation_code",     "value": "" },
     { "key": "product_id",          "value": "" },
     { "key": "order_id",            "value": "" },
     { "key": "payment_id",          "value": "" }
@@ -72,7 +75,7 @@
         },
         {
           "name": "1b. Login — Owner",
-          "description": "Run AFTER 2a (Create Owner). Uses owner_schema saved by that request.",
+          "description": "Run AFTER 2a (Create Owner). Uses owner_email, owner_temp_password and owner_schema saved by that request.",
           "event": [{
             "listen": "test",
             "script": {
@@ -91,7 +94,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"owner@testhotel.com\",\n  \"password\": \"Owner1234!\",\n  \"role\": \"OWNER\",\n  \"schemaName\": \"{{owner_schema}}\"\n}",
+              "raw": "{\n  \"email\": \"{{owner_email}}\",\n  \"password\": \"{{owner_temp_password}}\",\n  \"role\": \"OWNER\",\n  \"schemaName\": \"{{owner_schema}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/auth/login"
@@ -151,6 +154,7 @@
       "item": [
         {
           "name": "2a. Create Owner",
+          "description": "Creates an INDIVIDUAL owner. The backend auto-generates a temporaryPassword returned in the response. Save it — it is shown only once.",
           "event": [{
             "listen": "test",
             "script": {
@@ -160,7 +164,9 @@
                 "const json = pm.response.json();",
                 "pm.collectionVariables.set(\"owner_id\", json.id);",
                 "pm.collectionVariables.set(\"owner_schema\", json.schemaName);",
-                "console.log(\"Owner created. ID: \" + json.id + \" Schema: \" + json.schemaName);"
+                "pm.collectionVariables.set(\"owner_email\", json.contactEmail);",
+                "pm.collectionVariables.set(\"owner_temp_password\", json.temporaryPassword);",
+                "console.log(\"Owner created. ID: \" + json.id + \" Schema: \" + json.schemaName + \" TempPass: \" + json.temporaryPassword);"
               ]
             }
           }],
@@ -172,7 +178,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Hotel\",\n  \"email\": \"owner@testhotel.com\",\n  \"phone\": \"+30 210 0000000\",\n  \"password\": \"Owner1234!\"\n}",
+              "raw": "{\n  \"ownerType\": \"INDIVIDUAL\",\n  \"firstName\": \"Nikos\",\n  \"lastName\": \"Papadopoulos\",\n  \"vatId\": \"123456789\",\n  \"contactEmail\": \"owner@testhotel.gr\",\n  \"contactPhone\": \"+30 210 0000000\",\n  \"subscriptionPriceCents\": 120000\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/owners"
@@ -210,6 +216,7 @@
         },
         {
           "name": "2d. Update Owner",
+          "description": "ownerType, contactEmail and vatId are read-only and excluded from the update body.",
           "event": [{
             "listen": "test",
             "script": {
@@ -225,7 +232,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Hotel (Updated)\",\n  \"phone\": \"+30 210 1234567\"\n}",
+              "raw": "{\n  \"firstName\": \"Nikolaos\",\n  \"lastName\": \"Papadopoulos\",\n  \"contactPhone\": \"+30 210 1234567\",\n  \"subscriptionPriceCents\": 150000\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/owners/{{owner_id}}"
@@ -244,6 +251,22 @@
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
             "url": "{{baseUrl}}/owners/00000000-0000-0000-0000-000000000000"
+          }
+        },
+        {
+          "name": "2f. Delete Owner",
+          "description": "Hard delete — removes the owner and drops their tenant schema. Irreversible.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 204\", () => pm.response.to.have.status(204));"]
+            }
+          }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{baseUrl}}/owners/{{owner_id}}"
           }
         }
       ]
@@ -274,7 +297,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Seaside Suite 101\",\n  \"address\": \"Leoforos Poseidonos 1\",\n  \"city\": \"Athens\",\n  \"country\": \"Greece\",\n  \"timezone\": \"Europe/Athens\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\"\n}",
+              "raw": "{\n  \"name\": \"Seaside Suite 101\",\n  \"streetName\": \"Leoforos Poseidonos\",\n  \"streetNo\": \"1\",\n  \"postalCode\": \"17563\",\n  \"area\": \"Palaio Faliro\",\n  \"level\": 3,\n  \"nameOnDoorbell\": \"Papadopoulos\",\n  \"contactPhone\": \"+30 210 0000000\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/properties"
@@ -327,9 +350,25 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Seaside Suite 101 (Renovated)\",\n  \"address\": \"Leoforos Poseidonos 1\",\n  \"city\": \"Athens\",\n  \"country\": \"Greece\",\n  \"timezone\": \"Europe/Athens\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\"\n}",
+              "raw": "{\n  \"name\": \"Seaside Suite 101 (Renovated)\",\n  \"streetName\": \"Leoforos Poseidonos\",\n  \"streetNo\": \"1\",\n  \"postalCode\": \"17563\",\n  \"area\": \"Palaio Faliro\",\n  \"level\": 3,\n  \"nameOnDoorbell\": \"Papadopoulos\",\n  \"contactPhone\": \"+30 210 1234567\",\n  \"fulfillmentModel\": \"OWN_INFRASTRUCTURE\",\n  \"notes\": \"Ground floor entrance on the left\"\n}",
               "options": { "raw": { "language": "json" } }
             },
+            "url": "{{baseUrl}}/properties/{{property_id}}"
+          }
+        },
+        {
+          "name": "3e. Delete Property",
+          "description": "Hard delete — irreversible.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 204\", () => pm.response.to.have.status(204));"]
+            }
+          }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
             "url": "{{baseUrl}}/properties/{{property_id}}"
           }
         }
@@ -341,6 +380,7 @@
       "item": [
         {
           "name": "4a. Create Device",
+          "description": "Creates a device without an Android ID. The backend generates an activation code and QR code PNG (base64). The kiosk scans the QR to activate itself via 4d.",
           "event": [{
             "listen": "test",
             "script": {
@@ -349,7 +389,8 @@
                 "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
                 "const json = pm.response.json();",
                 "pm.collectionVariables.set(\"device_id\", json.id);",
-                "console.log(\"Device created. ID: \" + json.id);"
+                "pm.collectionVariables.set(\"activation_code\", json.activationCode);",
+                "console.log(\"Device created. ID: \" + json.id + \" Activation code: \" + json.activationCode);"
               ]
             }
           }],
@@ -361,7 +402,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Kiosk Tablet 1\",\n  \"androidDeviceId\": \"emulator-5554\"\n}",
+              "raw": "{\n  \"name\": \"Kiosk Tablet 1\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/properties/{{property_id}}/devices"
@@ -383,7 +424,48 @@
           }
         },
         {
-          "name": "4c. Ping Device (no auth — kiosk heartbeat)",
+          "name": "4c. Get Device by ID",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/devices/{{device_id}}"
+          }
+        },
+        {
+          "name": "4d. Activate Device (QR flow — no auth)",
+          "description": "No JWT required. The kiosk sends the scanned activation code and its hardware Android ID. Backend activates the device and clears the activation code.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activationCode\": \"{{activation_code}}\",\n  \"androidDeviceId\": \"emulator-5554\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/devices/{{device_id}}/activate?schemaName={{owner_schema}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["devices", "{{device_id}}", "activate"],
+              "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
+            }
+          }
+        },
+        {
+          "name": "4e. Ping Device (no auth — kiosk heartbeat)",
           "description": "Simulates the kiosk sending a heartbeat. No JWT required. Passes schemaName as query param.",
           "event": [{
             "listen": "test",
@@ -401,6 +483,22 @@
               "path": ["devices", "{{device_id}}", "ping"],
               "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
             }
+          }
+        },
+        {
+          "name": "4f. Delete Device",
+          "description": "Hard delete — irreversible.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 204\", () => pm.response.to.have.status(204));"]
+            }
+          }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{owner_token}}" }],
+            "url": "{{baseUrl}}/devices/{{device_id}}"
           }
         }
       ]
@@ -516,7 +614,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Natural still mineral water\",\n  \"basePrice\": 250,\n  \"imageUrl\": null,\n  \"isAvailable\": false\n}",
+              "raw": "{\n  \"isAvailable\": false\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/products/{{product_id}}/availability"
@@ -539,7 +637,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Still Water 500ml\",\n  \"description\": \"Natural still mineral water\",\n  \"basePrice\": 250,\n  \"imageUrl\": null,\n  \"isAvailable\": true\n}",
+              "raw": "{\n  \"isAvailable\": true\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/products/{{product_id}}/availability"
@@ -622,7 +720,30 @@
           }
         },
         {
-          "name": "6d. Update Order Status — PREPARING (Owner)",
+          "name": "6d. Update Order Status — CONFIRMED (Owner)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+            }
+          }],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{owner_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/orders/{{order_id}}/status"
+          }
+        },
+        {
+          "name": "6e. Update Order Status — PREPARING (Owner)",
           "event": [{
             "listen": "test",
             "script": {
@@ -645,7 +766,7 @@
           }
         },
         {
-          "name": "6e. Update Order Status — DELIVERED (Owner)",
+          "name": "6f. Update Order Status — DELIVERED (Owner)",
           "event": [{
             "listen": "test",
             "script": {
@@ -668,8 +789,8 @@
           }
         },
         {
-          "name": "6f. Invalid Status Transition (expect 409)",
-          "description": "Order is already DELIVERED — any further transition should return 409.",
+          "name": "6g. Invalid Status Transition (expect 409)",
+          "description": "Order is already DELIVERED — any further transition should return 409 Conflict.",
           "event": [{
             "listen": "test",
             "script": {
@@ -695,20 +816,18 @@
     },
 
     {
-      "name": "7. Payments (Kiosk — no auth)",
+      "name": "7. Payments (Kiosk — pending Phase 3B)",
+      "description": "Payment endpoints are not yet active in this release. They will return 404. Scheduled for implementation in Phase 3B alongside the owner web panel.",
       "item": [
         {
-          "name": "7a. Initiate Payment",
-          "description": "No JWT required. Kiosk flow. Passes schemaName as query param.",
+          "name": "7a. Initiate Payment [PENDING — returns 404]",
+          "description": "Not yet implemented. Pending Phase 3B.",
           "event": [{
             "listen": "test",
             "script": {
               "type": "text/javascript",
               "exec": [
-                "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
-                "const json = pm.response.json();",
-                "pm.collectionVariables.set(\"payment_id\", json.id);",
-                "console.log(\"Payment completed. ID: \" + json.id + \" Status: \" + json.status);"
+                "console.log(\"Payment endpoints pending Phase 3B. Status: \" + pm.response.code);"
               ]
             }
           }],
@@ -729,38 +848,15 @@
           }
         },
         {
-          "name": "7b. Pay Already-Paid Order (expect 409)",
-          "description": "Second payment on same order should return 409 Conflict.",
+          "name": "7b. Get Payment by Order ID [PENDING — returns 404]",
+          "description": "Not yet implemented. Pending Phase 3B.",
           "event": [{
             "listen": "test",
             "script": {
               "type": "text/javascript",
-              "exec": ["pm.test(\"Status 409\", () => pm.response.to.have.status(409));"]
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"method\": \"REVOLUT\"\n}",
-              "options": { "raw": { "language": "json" } }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/payments?schemaName={{owner_schema}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments"],
-              "query": [{ "key": "schemaName", "value": "{{owner_schema}}" }]
-            }
-          }
-        },
-        {
-          "name": "7c. Get Payment by Order ID (Owner)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "type": "text/javascript",
-              "exec": ["pm.test(\"Status 200\", () => pm.response.to.have.status(200));"]
+              "exec": [
+                "console.log(\"Payment endpoints pending Phase 3B. Status: \" + pm.response.code);"
+              ]
             }
           }],
           "request": {

@@ -45,11 +45,22 @@ python _Tools/seed_admin.py
 
 ## 3. Δοκιμές με Postman
 
-Η συλλογή Postman βρίσκεται στο `_Tools/postman_collection.json`.
+Η συλλογή Postman βρίσκεται στο `_Tools/postman_collection.json`. Χρησιμοποιεί collection variables (`{{admin_token}}`, `{{owner_token}}`, `{{owner_id}}` κ.ά.) που συμπληρώνονται αυτόματα από τα test scripts κάθε request.
 
-1. **Login**: Εκτελέστε το `POST /api/auth/login` με τα παραπάνω credentials. Θα λάβετε ένα `accessToken` και ένα `refreshToken`.
-2. **Health Check**: Εκτελέστε το `GET /api/health` για να επιβεβαιώσετε ότι η βάση είναι συνδεδεμένη.
-3. **Token Refresh**: Δοκιμάστε το `POST /api/auth/refresh` στέλνοντας το `refreshToken` για να λάβετε νέο access token.
+### Πλήρης Ροή Δοκιμής (Run Order)
+
+1. **Login (Platform Admin)**: `POST /api/auth/login` → αποθηκεύεται `admin_token`
+2. **Health Check**: `GET /api/health`
+3. **Δημιουργία Owner**: `POST /api/owners` → αποθηκεύεται `owner_id`, `owner_schema`, `owner_temp_password`
+4. **Login (Owner)**: `POST /api/auth/login` με `contactEmail` + `temporaryPassword` → αποθηκεύεται `owner_token`
+5. **Δημιουργία Property**: `POST /api/properties` → αποθηκεύεται `property_id`
+6. **Δημιουργία Device**: `POST /api/properties/{{property_id}}/devices` → αποθηκεύεται `device_id`, `activation_code`
+7. **Ενεργοποίηση Device (QR flow)**: `POST /api/devices/{{device_id}}/activate` με `activationCode` + `androidDeviceId`
+8. **Δημιουργία Product**: `POST /api/products` → αποθηκεύεται `product_id`
+9. **Δημιουργία Order (kiosk, χωρίς auth)**: `POST /api/orders?schemaName=...&deviceId=...&propertyId=...`
+10. **Ενημέρωση Status Παραγγελίας**: `PATCH /api/orders/{{order_id}}/status`
+
+> **Σημείωση**: Τα payment endpoints (`POST /api/payments`, `GET /api/orders/{id}/payment`) δεν είναι ακόμη ενεργά — προγραμματίζονται για επόμενη φάση.
 
 ---
 
