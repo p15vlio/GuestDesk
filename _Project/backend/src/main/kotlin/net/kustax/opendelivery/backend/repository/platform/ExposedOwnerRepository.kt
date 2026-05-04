@@ -120,7 +120,25 @@ class ExposedOwnerRepository : OwnerRepository {
     suspend fun setPasswordHash(ownerId: String, hash: String): Unit = DatabaseFactory.dbQuery {
         OwnersTable.update({ OwnersTable.id eq ownerId }) { it[passwordHash] = hash }
     }
+
+    suspend fun findAllWithStats(): List<OwnerStats> = DatabaseFactory.dbQuery {
+        OwnersTable.selectAll().map {
+            OwnerStats(
+                owner = it.toOwner(),
+                propertyCount = 0, // Simplified for now
+                deviceCount = 0,
+                productCount = 0
+            )
+        }
+    }
 }
+
+data class OwnerStats(
+    val owner: Owner,
+    val propertyCount: Int,
+    val deviceCount: Int,
+    val productCount: Int
+)
 
 private fun ResultRow.toOwner() = Owner(
     id = this[OwnersTable.id],

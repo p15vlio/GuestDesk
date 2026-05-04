@@ -15,6 +15,7 @@ import net.kustax.opendelivery.backend.repository.tenant.ExposedProductRepositor
 import net.kustax.opendelivery.backend.repository.tenant.ExposedPropertyRepository
 import net.kustax.opendelivery.backend.service.AuditLogService
 import net.kustax.opendelivery.backend.service.AuthService
+import net.kustax.opendelivery.backend.service.DashboardService
 import net.kustax.opendelivery.backend.service.DeviceService
 import net.kustax.opendelivery.backend.service.OrderService
 import net.kustax.opendelivery.backend.service.OwnerService
@@ -49,6 +50,8 @@ fun Application.configureRouting() {
         foodDeliveryAdapter, logisticsAdapter
     )
 
+    val dashboardService = DashboardService(propertyRepository, deviceRepository, orderRepository)
+
     routing {
         route("/api") {
             healthRoute()
@@ -62,6 +65,8 @@ fun Application.configureRouting() {
                 ownerRoutes(ownerService)
                 propertyRoutes(propertyService)
                 deviceRoutes(deviceService)
+                dashboardRoutes(dashboardService)
+                adminRoutes(ownerRepository, propertyRepository, deviceRepository, productRepository)
             }
         }
     }

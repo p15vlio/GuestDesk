@@ -67,3 +67,4 @@ rootProject.name = "GuestDesk"
 include(":domain")
 include(":data")
 include(":backend")
+include(":owner-web")

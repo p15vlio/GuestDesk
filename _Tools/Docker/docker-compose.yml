@@ -19,7 +19,8 @@ services:
   backend:
     build:
       context: ../../_Project
-      dockerfile: ../_Tools/Docker/backend.Dockerfile
+      dockerfile: ../_Tools/Docker/app.Dockerfile
+      target: backend
     container_name: opendelivery-backend
     environment:
       - JDBC_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
@@ -30,6 +31,17 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ../../_Project
+      dockerfile: ../_Tools/Docker/app.Dockerfile
+      target: frontend
+    container_name: opendelivery-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

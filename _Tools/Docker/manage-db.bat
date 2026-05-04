@@ -15,8 +15,8 @@ pushd "%~dp0"
 set COMMAND=%1
 
 if "%COMMAND%"=="up" (
-    echo [INFO] Starting PostgreSQL database...
-    docker-compose up -d
+    echo [INFO] Building and starting all services...
+    docker-compose up --build -d
     goto :cleanup
 )
 

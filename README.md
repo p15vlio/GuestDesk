@@ -28,15 +28,18 @@
 4.  **Σχεδιασμός API**: Αποτύπωση των βασικών διεπαφών επικοινωνίας (REST endpoints).
 5.  **Database Layer & Authentication**: Πλήρης υλοποίηση του DB layer (14 πίνακες), υποδομή JWT, BCrypt, refresh token rotation, endpoints `/api/auth/login`, `/api/auth/refresh`, `/api/health`.
 6.  **Service Layer & REST API**: Πλήρης υλοποίηση service layer (`OwnerService`, `PropertyService`, `DeviceService`, `ProductService`, `OrderService`, `AuditLogService`) και REST routing (~27 endpoints λειτουργικά). QR activation flow για devices. Emulated adapters για FoodDelivery, Logistics, Payment, Email (Port & Adapter pattern).
+7.  **Web Panel — Αυθεντικοποίηση & Dashboard**: Ολοκλήρωση του `:owner-web` module (Compose Multiplatform / wasmJs) — Login Screen με JWT αυθεντικοποίηση, αυτόματο token refresh, και Dashboard με stat cards, λίστα καταλυμάτων και πρόσφατες παραγγελίες.
 
 ## 🚀 Γρήγορη Εκκίνηση (Quick Start)
 
 Για να τρέξετε το σύστημα τοπικά από το **root** του project:
 
-1.  **Εκκίνηση Docker (DB & Backend)**:
+1.  **Εκκίνηση Docker (DB + Backend + Web Panel)**:
     ```bash
     _Tools\Docker\manage-db.bat up
     ```
+    Εκκινεί τρεις υπηρεσίες: `postgres` (5432), `backend` (8080), `frontend` / nginx (80).
+
 2.  **Seed Platform Admin**:
     ```bash
     # Προϋπόθεση: pip install bcrypt psycopg2-binary
@@ -44,8 +47,15 @@
     ```
     *Credentials: `admin@guestdesk.io` / `Admin@GuestDesk1`*
 
-3.  **Έλεγχος**:
-    Ανοίξτε `http://localhost:8080/api/health` στον browser.
+3.  **Seed Demo Data** (προαιρετικό — 5 owners, 18 properties, ~360 products):
+    ```bash
+    # Προϋπόθεση: pip install requests
+    python _Tools/seed_data.py
+    ```
+
+4.  **Έλεγχος**:
+    - Backend health: `http://localhost:8080/api/health`
+    - Web Panel: `http://localhost`
 
 ---
 
@@ -58,6 +68,7 @@
     - [Εβδομάδα 03 — Database Layer & Authentication](_Docs/Weekly%20Reports/Week_03_060426.md)
     - [Εβδομάδα 04 — Περίληψη & Εισαγωγή](_Docs/Weekly%20Reports/Week_04_130426.md)
     - [Εβδομάδα 05 — Service Layer & REST API](_Docs/Weekly%20Reports/Week_05_200426.md)
+    - [Εβδομάδα 06 — Web Panel: Login & Dashboard](_Docs/Weekly%20Reports/Week_06_270426.md)
 - 🗺️ **Αρχιτεκτονική Επισκόπηση**: [Χάρτης Modules & Δομή Έργου](_Docs/Info/Project_Structure.md)
 - 💻 **Τοπικό Περιβάλλον Ανάπτυξης**: [Docker, DB seed, JDBC config](_Docs/Info/Dev_Environment.md)
 - 🧪 **Οδηγός Ανάπτυξης και Δοκιμών**: [Build & Test Guide](_Docs/Info/Build_and_Dev_Guide.md)
