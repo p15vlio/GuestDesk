@@ -27,7 +27,7 @@
     - **Security**: Διαχείριση αυθεντικοποίησης (JWT, BCrypt) και ασφάλειας.
     - **Repository Layer**: Υλοποίηση των repository interfaces μέσω Exposed DSL — `ExposedOwnerRepository`, `ExposedPropertyRepository`, `ExposedDeviceRepository`, `ExposedProductRepository`, `ExposedOrderRepository` κ.ά.
     - **Service Layer**: Επιχειρηματική λογική ανά οντότητα — `OwnerService` (δημιουργία tenant schema, προσωρινός κωδικός), `PropertyService`, `DeviceService` (QR activation), `ProductService`, `OrderService` (state machine), `AuditLogService`.
-    - **Routing Layer**: Ορισμός ~27 REST endpoints — `OwnerRoutes`, `PropertyRoutes`, `DeviceRoutes`, `ProductRoutes`, `OrderRoutes`, `AuthRoutes`. `RouteExtensions` για εξαγωγή JWT claims (role, schemaName).
+    - **Routing Layer**: ~32 REST endpoints — `OwnerRoutes`, `PropertyRoutes`, `DeviceRoutes`, `ProductRoutes`, `OrderRoutes`, `AuthRoutes`, `PaymentRoutes` (`POST /api/payments` χωρίς auth, `GET /api/orders/{id}/payment` OWNER), `AuditLogRoutes` (`GET /api/audit-logs` PLATFORM_ADMIN, pagination), `AdminRoutes` (`GET /api/admin/owners/stats`), `DashboardRoutes` (`GET /api/dashboard/summary`), `HealthRoute`. `RouteExtensions` για εξαγωγή JWT claims (role, schemaName) με fallback για PLATFORM_ADMIN cross-tenant πρόσβαση.
     - **Adapter Layer**: 4 emulated adapters που υλοποιούν τα port interfaces του domain — `EmulatedFoodDeliveryAdapter`, `EmulatedLogisticsAdapter`, `EmulatedPaymentAdapter`, `EmulatedEmailAdapter`.
 
 #### 4. `:app` (Android / Compose)
@@ -38,10 +38,25 @@
 
 #### 5. `:owner-web` (WebAssembly - WasmJs / Compose)
 - **Σκοπός**: Το κεντρικό διαχειριστικό περιβάλλον για Platform Admins και Owners.
-- **Περιεχόμενα**: 
-    - **Admin Panel**: Διαχείριση ιδιοκτητών και στατιστικά πλατφόρμας.
-    - **Owner Dashboard**: Διαχείριση προϊόντων και παραγγελιών καταλύματος.
-- **Τεχνολογία**: Χρησιμοποιεί το Kotlin/Wasm για υψηλή απόδοση στο πρόγραμμα περιήγησης.
+- **Τεχνολογία**: Kotlin/Wasm (Compose Multiplatform), Ktor JS client, JWT αυθεντικοποίηση με αυτόματο token refresh.
+- **Υποδομή**: `AppScaffold` (dark navy sidebar 240dp, top bar με role chip), `FormDialog` (sticky header + scrollable body + sticky footer), `OpenDeliveryTheme` (deep blue / teal, `AppShapes`), `BreadcrumbBar`, `EmptyState`, `QrCodeDialog`, `StatusChip`, `ActiveBadge`.
+- **Οθόνες Platform Admin**:
+    - `AdminDashboardScreen` — 7 stat cards, top-5 bar chart, recent owners, recent audit log
+    - `OwnerListScreen` — CRUD με `TempPasswordDialog`, stats badges, search
+    - `AdminOwnerViewScreen` — Tabbed tenant view (Dashboard / Properties / Products / Orders)
+    - `AdminPropertiesScreen` — Όλα τα καταλύματα per owner, Add/Edit/Delete
+    - `AdminDevicesScreen` — Συσκευές per owner→property, Add με QrCodeDialog, Delete
+    - `AdminProductsScreen` — Προϊόντα per owner, availability toggle, Add/Delete
+    - `AuditLogScreen` — Dual filter (Action + Entity), pagination, expandable details
+    - `SettingsScreen`, `IntegrationsScreen` (6 emulated adapters), `AboutScreen`, `HelpScreen`, `AdminStubScreen`
+- **Οθόνες Owner**:
+    - `DashboardScreen` — 5 stat cards, quick action buttons, property grid, recent orders
+    - `PropertyListScreen` — Πλήρες address model, Create/Edit/Delete, fulfillment dropdown
+    - `DeviceListScreen` — Activation code με copy button, BreadcrumbBar, Delete
+    - `ProductListScreen` — Optimistic availability toggle, Create/Edit/Delete, Snackbar
+    - `OrderListScreen` — Status filter, expandable cards με payment info, BreadcrumbBar
+    - `OwnerOrdersScreen` — Συνολικές παραγγελίες cross-property
+- **LoginScreen**: Δύο-panel layout (40% gradient brand panel + 60% form panel), role selector, health indicator.
 
 ---
 

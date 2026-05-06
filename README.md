@@ -29,6 +29,7 @@
 5.  **Database Layer & Authentication**: Πλήρης υλοποίηση του DB layer (14 πίνακες), υποδομή JWT, BCrypt, refresh token rotation, endpoints `/api/auth/login`, `/api/auth/refresh`, `/api/health`.
 6.  **Service Layer & REST API**: Πλήρης υλοποίηση service layer (`OwnerService`, `PropertyService`, `DeviceService`, `ProductService`, `OrderService`, `AuditLogService`) και REST routing (~27 endpoints λειτουργικά). QR activation flow για devices. Emulated adapters για FoodDelivery, Logistics, Payment, Email (Port & Adapter pattern).
 7.  **Web Panel — Αυθεντικοποίηση & Dashboard**: Ολοκλήρωση του `:owner-web` module (Compose Multiplatform / wasmJs) — Login Screen με JWT αυθεντικοποίηση, αυτόματο token refresh, και Dashboard με stat cards, λίστα καταλυμάτων και πρόσφατες παραγγελίες.
+8.  **Web Panel — Ολοκλήρωση Admin & Owner Screens**: Υλοποίηση του συνόλου των οθονών του `:owner-web` module. Για τον ρόλο **Platform Admin**: `AdminOwnerViewScreen` (tabbed tenant view), `AdminPropertiesScreen`, `AdminDevicesScreen` (με QR flow), `AdminProductsScreen`, `AuditLogScreen` (dual filter, pagination), `SettingsScreen`, `IntegrationsScreen` (6 emulated adapters), `AboutScreen` (health indicator), `HelpScreen` (FAQ accordion), `AdminStubScreen`. Για τον ρόλο **Owner**: `PropertyListScreen`, `DeviceListScreen` (BreadcrumbBar, activation code), `ProductListScreen` (optimistic toggle), `OrderListScreen` (expandable cards, payment info), `OwnerOrdersScreen`. Τρία νέα UI components (`BreadcrumbBar`, `EmptyState`, `QrCodeDialog`). Backend συμπληρώθηκε με `PaymentRoutes` (POST/GET) και `AuditLogRoutes` (GET με pagination). UI polish: dark navy sidebar (slate-900), custom `FormDialog` με sticky header/footer, δύο-panel `LoginScreen`, ενισχυμένα χρώματα θέματος (Theme.kt), `AppShapes` στο MaterialTheme.
 
 ## 🚀 Γρήγορη Εκκίνηση (Quick Start)
 
@@ -69,6 +70,7 @@
     - [Εβδομάδα 04 — Περίληψη & Εισαγωγή](_Docs/Weekly%20Reports/Week_04_130426.md)
     - [Εβδομάδα 05 — Service Layer & REST API](_Docs/Weekly%20Reports/Week_05_200426.md)
     - [Εβδομάδα 06 — Web Panel: Login & Dashboard](_Docs/Weekly%20Reports/Week_06_270426.md)
+    - [Εβδομάδα 07 — Web Panel: Admin & Owner Screens](_Docs/Weekly%20Reports/Week_07_040526.md)
 - 🗺️ **Αρχιτεκτονική Επισκόπηση**: [Χάρτης Modules & Δομή Έργου](_Docs/Info/Project_Structure.md)
 - 💻 **Τοπικό Περιβάλλον Ανάπτυξης**: [Docker, DB seed, JDBC config](_Docs/Info/Dev_Environment.md)
 - 🧪 **Οδηγός Ανάπτυξης και Δοκιμών**: [Build & Test Guide](_Docs/Info/Build_and_Dev_Guide.md)
