@@ -16,25 +16,25 @@ set COMMAND=%1
 
 if "%COMMAND%"=="up" (
     echo [INFO] Building and starting all services...
-    docker-compose up --build -d
+    docker compose up --build -d
     goto :cleanup
 )
 
 if "%COMMAND%"=="down" (
     echo [INFO] Stopping PostgreSQL database...
-    docker-compose down
+    docker compose down
     goto :cleanup
 )
 
 if "%COMMAND%"=="status" (
     echo [INFO] Database status:
-    docker-compose ps
+    docker compose ps
     goto :cleanup
 )
 
 if "%COMMAND%"=="logs" (
     echo [INFO] Showing logs (Ctrl+C to exit)...
-    docker-compose logs -f
+    docker compose logs -f
     goto :cleanup
 )
 

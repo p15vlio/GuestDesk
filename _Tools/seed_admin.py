@@ -15,7 +15,7 @@ Usage:
         DB_PORT      (default: 5432)
         DB_NAME      (default: opendelivery)
         DB_USER      (default: postgres)
-        DB_PASSWORD  (default: empty string)
+        DB_PASSWORD  (default: opendelivery)
         ADMIN_EMAIL  (default: admin@guestdesk.io)
         ADMIN_PASS   (default: Admin@GuestDesk1)
 

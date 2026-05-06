@@ -2,6 +2,7 @@ package net.kustax.opendelivery.web.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,37 +11,60 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import net.kustax.opendelivery.data.response.AuditLogResponse
 import net.kustax.opendelivery.data.response.OwnerWithStatsResponse
 import net.kustax.opendelivery.web.api.ApiClient
 import net.kustax.opendelivery.web.ui.ActiveBadge
 import net.kustax.opendelivery.web.util.formatEuros
 import net.kustax.opendelivery.web.util.formatTimestamp
+import net.kustax.opendelivery.web.util.toLabel
+
+@JsFun("() => Date.now()")
+private external fun jsDateNow(): Double
+private fun jsNow(): Long = jsDateNow().toLong()
 
 @Composable
 fun AdminDashboardScreen(client: ApiClient) {
     var ownerStats by remember { mutableStateOf(emptyList<OwnerWithStatsResponse>()) }
+    var recentAuditLogs by remember { mutableStateOf(emptyList<AuditLogResponse>()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         try { ownerStats = client.getOwnerStats() } catch (e: Exception) { errorMessage = e.message }
     }
 
+    LaunchedEffect(Unit) {
+        try { recentAuditLogs = client.listAuditLogs(limit = 10, offset = 0L) } catch (_: Exception) {}
+    }
+
     val totalOwners = ownerStats.size
     val activeOwners = ownerStats.count { it.owner.isActive }
+    val inactiveOwners = ownerStats.count { !it.owner.isActive }
     val totalProperties = ownerStats.sumOf { it.propertyCount }
-    val totalProducts = ownerStats.sumOf { it.productCount }
+    val totalDevices = ownerStats.sumOf { it.deviceCount }
     val totalRevenueCents = ownerStats.sumOf { it.owner.subscriptionPriceCents }
+    val activeSubscriptions = ownerStats.count {
+        it.owner.subscriptionActiveUntil != null && it.owner.subscriptionActiveUntil!! > jsNow()
+    }
     val recentOwners = ownerStats.sortedByDescending { it.owner.createdAt }.take(5)
+
+    val top5ByProperties = ownerStats.sortedByDescending { it.propertyCount }.take(5)
+    val barColor = Color(0xFF1E3A5F)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("Admin Dashboard", style = MaterialTheme.typography.headlineSmall)
+            Text("Dashboard", style = MaterialTheme.typography.headlineSmall)
         }
 
         errorMessage?.let {
@@ -52,10 +76,75 @@ fun AdminDashboardScreen(client: ApiClient) {
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatCard("Total Owners", totalOwners.toString(), Modifier.weight(1f))
-                StatCard("Active Owners", activeOwners.toString(), Modifier.weight(1f), accent = Color(0xFF10B981))
+                StatCard("Active", activeOwners.toString(), Modifier.weight(1f), accent = MaterialTheme.colorScheme.tertiary)
+                StatCard("Inactive", inactiveOwners.toString(), Modifier.weight(1f), accent = MaterialTheme.colorScheme.error)
                 StatCard("Properties", totalProperties.toString(), Modifier.weight(1f))
-                StatCard("Products", totalProducts.toString(), Modifier.weight(1f))
+                StatCard("Devices", totalDevices.toString(), Modifier.weight(1f))
                 StatCard("Annual Revenue", formatEuros(totalRevenueCents), Modifier.weight(1f), accent = MaterialTheme.colorScheme.secondary)
+                StatCard("Active Subs", activeSubscriptions.toString(), Modifier.weight(1f), accent = MaterialTheme.colorScheme.tertiary)
+            }
+        }
+
+        if (top5ByProperties.isNotEmpty()) {
+            item {
+                val textMeasurer = rememberTextMeasurer()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("Properties by Owner (Top 5)", style = MaterialTheme.typography.titleSmall)
+                        val maxCount = top5ByProperties.maxOf { it.propertyCount }.coerceAtLeast(1)
+                        // Extra 30.dp height to leave room for X-axis labels
+                        Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+                            val barCount = top5ByProperties.size
+                            val paddingLeft = 8f
+                            val spacing = 8f
+                            val totalSpacing = spacing * (barCount + 1)
+                            val barWidth = (size.width - totalSpacing - paddingLeft) / barCount
+                            val labelAreaHeight = 30.dp.toPx()
+                            val chartHeight = size.height - labelAreaHeight
+                            val axisY = chartHeight - 16f
+
+                            drawLine(
+                                color = Color.Gray,
+                                start = Offset(0f, axisY),
+                                end = Offset(size.width, axisY),
+                                strokeWidth = 1f
+                            )
+
+                            top5ByProperties.forEachIndexed { index, item ->
+                                val x = paddingLeft + spacing + index * (barWidth + spacing)
+                                val barHeight = ((item.propertyCount.toFloat() / maxCount) * (axisY - 8f)).coerceAtLeast(2f)
+                                drawRect(
+                                    color = barColor,
+                                    topLeft = Offset(x, axisY - barHeight),
+                                    size = Size(barWidth, barHeight)
+                                )
+
+                                // X-axis label centered under each bar
+                                val labelText = item.owner.displayName.take(9)
+                                val measured = textMeasurer.measure(
+                                    labelText,
+                                    style = TextStyle(fontSize = 9.sp, color = Color.Gray)
+                                )
+                                drawText(
+                                    textLayoutResult = measured,
+                                    topLeft = Offset(
+                                        x = x + barWidth / 2f - measured.size.width / 2f,
+                                        y = chartHeight + 6.dp.toPx()
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -94,7 +183,7 @@ fun AdminDashboardScreen(client: ApiClient) {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "${item.propertyCount} properties · ${item.productCount} products",
+                                "${item.propertyCount} properties · ${item.deviceCount} devices · ${item.productCount} products",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -105,11 +194,52 @@ fun AdminDashboardScreen(client: ApiClient) {
                         ) {
                             ActiveBadge(owner.isActive)
                             Text(
-                                formatTimestamp(owner.createdAt).take(10),
+                                formatTimestamp(owner.createdAt),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        if (recentAuditLogs.isNotEmpty()) {
+            item {
+                Text("Recent Activity", style = MaterialTheme.typography.titleMedium)
+            }
+            items(recentAuditLogs) { log ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                "${log.actorRole.toLabel()} · ${log.action}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                log.targetType + (log.targetId?.let { " ($it)" } ?: ""),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            formatTimestamp(log.createdAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

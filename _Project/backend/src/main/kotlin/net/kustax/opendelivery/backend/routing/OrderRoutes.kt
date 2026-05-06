@@ -80,3 +80,36 @@ fun Route.orderRoutes(orderService: OrderService) {
         }
     }
 }
+
+fun Route.deviceOrderRoutes(orderService: OrderService) {
+    route("/device/orders") {
+        get("/{id}") {
+            val schema = call.request.queryParameters["schemaName"]
+                ?: return@get call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(code = "BAD_REQUEST", message = "schemaName query parameter is required")
+                )
+            val id = call.parameters["id"]!!
+            withContext(TenantContext(schema) + currentCoroutineContext()) {
+                val response = orderService.findById(id)
+                call.respond(HttpStatusCode.OK, response)
+            }
+        }
+
+        patch("/{id}/cancel") {
+            val schema = call.request.queryParameters["schemaName"]
+                ?: return@patch call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(code = "BAD_REQUEST", message = "schemaName query parameter is required")
+                )
+            val id = call.parameters["id"]!!
+            withContext(TenantContext(schema) + currentCoroutineContext()) {
+                val response = orderService.updateStatus(
+                    id,
+                    UpdateOrderStatusRequest(status = "CANCELLED")
+                )
+                call.respond(HttpStatusCode.OK, response)
+            }
+        }
+    }
+}

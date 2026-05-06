@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y libatomic1 && rm -rf /var/lib/apt/lists
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts ./
-COPY gradle/libs.versions.toml ./gradle/
 RUN chmod +x gradlew
+RUN ./gradlew dependencies --no-daemon || true
 
 COPY . .
 RUN ./gradlew :backend:installDist :owner-web:wasmJsBrowserDevelopmentDistribution --no-daemon
